@@ -145,5 +145,36 @@ namespace TP___Reflexion
                 }
             }
         }
+
+        private string GenerarSQL(Type tipo)
+        {
+            var propiedades = tipo.GetProperties();
+            var tablaNombre = tipo.Name;
+
+            // Generar SQL para crear tabla
+            string createTable = $"CREATE TABLE {tablaNombre} (";
+            foreach (var prop in propiedades)
+            {
+                createTable += $"  {prop.Name} {MapearTipoSQL(prop.PropertyType)},\n";
+            }
+            createTable = createTable.TrimEnd(',', '\n') + "\n);" + Environment.NewLine;
+
+            // Generar SQL para operaciones
+            string insert = $"INSERT INTO {tablaNombre} ({string.Join(", ", propiedades.Select(p => p.Name))}) VALUES ({string.Join(", ", propiedades.Select(p => "@" + p.Name))});" + Environment.NewLine;
+            string update = $"UPDATE {tablaNombre} SET {string.Join(", ", propiedades.Select(p => $"{p.Name} = @{p.Name}"))} WHERE Id = @Id;" + Environment.NewLine; //asumiendo que por defecto hay un id para hacer update
+            string delete = $"DELETE FROM {tablaNombre} WHERE Id = @Id;" + Environment.NewLine;//asumiendo que por defecto hay un id para hacer delete
+            string select = $"SELECT * FROM {tablaNombre};" + Environment.NewLine;
+
+            return $"{createTable}\n\n{insert}\n{update}\n{delete}\n{select}";
+        }
+
+        private string MapearTipoSQL(Type tipo)
+        {
+            if (tipo == typeof(int)) return "INT";
+            if (tipo == typeof(string)) return "VARCHAR(255)";
+            if (tipo == typeof(DateTime)) return "DATETIME";
+
+            return "VARCHAR(255)"; // Tipo por defecto
+        }
     }
 }
