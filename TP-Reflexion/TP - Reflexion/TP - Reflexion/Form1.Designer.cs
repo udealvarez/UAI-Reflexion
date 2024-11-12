@@ -52,6 +52,7 @@
             this.btnGenerarSQL.TabIndex = 1;
             this.btnGenerarSQL.Text = "Generar";
             this.btnGenerarSQL.UseVisualStyleBackColor = true;
+            this.btnGenerarSQL.Click += new System.EventHandler(this.btnGenerarSQL_Click);
             // 
             // cmbClases
             // 

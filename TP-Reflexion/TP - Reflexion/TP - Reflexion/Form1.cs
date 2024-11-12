@@ -117,7 +117,7 @@ namespace TP___Reflexion
             return typeBuilder.CreateType();
         }
 
-        private Type MapearTipo(string v)
+        private Type MapearTipo(string tipo)
         {
             // Mapeo de tipos de C# a tipos .NET
             return tipo switch
@@ -127,6 +127,23 @@ namespace TP___Reflexion
                 "DateTime" => typeof(DateTime),
                 _ => typeof(string) // Tipo por defecto, se pueden seguir mapeando a mano
             };
+        }
+
+        private void btnGenerarSQL_Click(object sender, EventArgs e)
+        {
+            if (cmbClases.SelectedItem != null)
+            {
+                string nombreClase = cmbClases.SelectedItem.ToString();
+                if (clases.TryGetValue(nombreClase, out Type tipoSeleccionado))
+                {
+                    string sql = GenerarSQL(tipoSeleccionado);
+                    txtSQL.Text = sql;
+                }
+                else
+                {
+                    MessageBox.Show("Clase no encontrada.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
         }
     }
 }
