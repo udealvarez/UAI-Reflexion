@@ -42,6 +42,7 @@
             this.btnAbrir.TabIndex = 0;
             this.btnAbrir.Text = "Abrir";
             this.btnAbrir.UseVisualStyleBackColor = true;
+            this.btnAbrir.Click += new System.EventHandler(this.btnAbrir_Click);
             // 
             // btnGenerarSQL
             // 
