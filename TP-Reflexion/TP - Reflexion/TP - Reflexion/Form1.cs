@@ -64,7 +64,69 @@ namespace TP___Reflexion
 
         private Type CrearTipoDinamico(string className, IEnumerable<PropertyDeclarationSyntax> properties)
         {
-            throw new NotImplementedException();
+            // Utilizando reflection emit
+            var assemblyName = new AssemblyName("DynamicAssembly");//representa el ensamblado donde armo el tipo dinamico
+            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);//AssemblyBuilder.DefineDynamicAssembly se utiliza para crear un ensamblado dinámico que puede ser ejecutado en tiempo de ejecución.
+                                                                                                                 //La opción AssemblyBuilderAccess.Run indica que el ensamblado es accesible solo para la ejecució
+            var moduleBuilder = assemblyBuilder.DefineDynamicModule("DynamicModule");//Dentro del ensamblado, se define un módulo dinámico llamado "DynamicModule".
+            var typeBuilder = moduleBuilder.DefineType(className, TypeAttributes.Public);//se define un nuevo tipo dinámico con el nombre className y se especifica que es público. Esto se realiza a través del TypeAttributes que es un enum interno de la biblioteca
+
+            foreach (var prop in properties)//Se itera sobre las propiedades que se han extraído del archivo de código.
+            {
+                var propertyName = prop.Identifier.Text;//obtengo nombre propiedad
+                var propertyType = MapearTipo(prop.Type.ToString());// obtengo tipo de propiedad del dato mediante MapearTipo
+                var fieldBuilder = typeBuilder.DefineField("_" + propertyName, propertyType, FieldAttributes.Private);//Se define el campo en el tipo dinámico, especificando su nombre, atributos y tipo.
+
+                var propertyBuilder = typeBuilder.DefineProperty(propertyName, PropertyAttributes.HasDefault, propertyType, null);//Se define la propiedad en el tipo dinámico, especificando su nombre, atributos y tipo.
+
+                var getMethodBuilder = typeBuilder.DefineMethod("get_" + propertyName,
+                    MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Virtual,
+                    propertyType, Type.EmptyTypes);//Se define un método que actuará como el getter de la propiedad. Se especifican los atributos y el tipo de retorno.
+                var getIL = getMethodBuilder.GetILGenerator();//Se obtiene el generador de IL (Intermediate Language) para el método. Por ejemplos MSIL
+
+                getIL.Emit(OpCodes.Ldarg_0);
+                getIL.Emit(OpCodes.Ldfld, fieldBuilder);
+                getIL.Emit(OpCodes.Ret);
+                propertyBuilder.SetGetMethod(getMethodBuilder);
+                /*
+                 * se emiten instrucciones IL que cargan el objeto actual (Ldarg_0), 
+                 * acceden al campo (Ldfld) 
+                 * y retornan su valor (Ret). 
+                 * se asocia este método como el getter de la propiedad
+                 */
+
+
+                var setMethodBuilder = typeBuilder.DefineMethod("set_" + propertyName,
+                    MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Virtual,
+                    null, new Type[] { propertyType });//Se define un método que actuará como el setter de la propiedad. A diferencia del getter, este método no devuelve un valor.
+
+                var setIL = setMethodBuilder.GetILGenerator();
+                setIL.Emit(OpCodes.Ldarg_0);
+                setIL.Emit(OpCodes.Ldarg_1);
+                setIL.Emit(OpCodes.Stfld, fieldBuilder);
+                setIL.Emit(OpCodes.Ret);
+                propertyBuilder.SetSetMethod(setMethodBuilder);
+                /*
+                 * Se obtiene el generador de IL para el método setter. 
+                 * Se emiten instrucciones para cargar el objeto actual,
+                 * cargar el valor de entrada (Ldarg_1), 
+                 * almacenar el valor en el campo (Stfld), y retornar.
+                 */
+            }
+
+            return typeBuilder.CreateType();
+        }
+
+        private Type MapearTipo(string v)
+        {
+            // Mapeo de tipos de C# a tipos .NET
+            return tipo switch
+            {
+                "int" => typeof(int),
+                "string" => typeof(string),
+                "DateTime" => typeof(DateTime),
+                _ => typeof(string) // Tipo por defecto, se pueden seguir mapeando a mano
+            };
         }
     }
 }
